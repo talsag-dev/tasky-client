@@ -1,0 +1,9 @@
+@import "@radix-ui/themes/styles.css";
+
+/* Optional: Add your custom global styles here */
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background-color: var(--gray-1);
+  color: var(--gray-12);
+}
