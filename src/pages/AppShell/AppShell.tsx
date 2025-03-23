@@ -2,7 +2,7 @@ import { useAuth } from "../../context/AuthContext";
 import { AuthScreen } from "../AuthScreen";
 import { Avatar, Button, Separator, Text } from "@radix-ui/themes";
 import { useState } from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useNavigate } from "react-router-dom";
 
 import { SideBar } from "../../components/SideBar";
 import "./AppShell.css";
@@ -12,7 +12,7 @@ import { TasksPage } from "../Tasks";
 export const AppShell = () => {
   const { user, logout, isAuthLoading, authError } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(true);
-
+  const route = useNavigate();
   if (isAuthLoading) {
     return (
       <div className="app-loading">
@@ -37,10 +37,19 @@ export const AppShell = () => {
   const handleSetSideBar = () => {
     setSidebarOpen((prev) => !prev);
   };
+
+  const handleClickHome = () => {
+    route("/");
+  };
   return (
     <div className="app-shell">
       <header className="app-header">
-        <Text size="7" weight="bold" className="header-title">
+        <Text
+          onClick={handleClickHome}
+          size="7"
+          weight="bold"
+          className="header-title"
+        >
           Tasky
         </Text>
         <div className="header-right">
