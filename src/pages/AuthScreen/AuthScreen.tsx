@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
 import {
   Flex,
   Heading,
@@ -9,6 +10,7 @@ import {
   Link,
 } from "@radix-ui/themes";
 import { AuthService, UsersService } from "@tasky/api-client";
+import { useAuth } from "../../context/AuthContext";
 import "./AuthScreen.css";
 
 export const AuthScreen = () => {
@@ -16,34 +18,63 @@ export const AuthScreen = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+  const { login: loginUser } = useAuth();
 
   const toggleMode = () => {
     setMode((prev) => (prev === "sign-in" ? "sign-up" : "sign-in"));
     setEmail("");
     setPassword("");
+    setName("");
+    setErrorMessage("");
+    setSuccessMessage("");
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const loginMutation = useMutation({
+    mutationFn: () => AuthService.authControllerLogin({ email, password }),
+    onSuccess: ({ accessToken, refreshToken, user }) => {
+      loginUser(user, accessToken, refreshToken);
+      setSuccessMessage(""); // Clear on successful login
+    },
+    onError: (error) => {
+      const msg =
+        error?.response?.data?.message || error.message || "Login failed";
+      setErrorMessage(msg);
+    },
+  });
+
+  const signupMutation = useMutation({
+    mutationFn: () =>
+      UsersService.usersControllerCreate({ email, password, name }),
+    onSuccess: () => {
+      setSuccessMessage("Signup successful! You can now log in.");
+      setErrorMessage("");
+      setMode("sign-in");
+      setEmail("");
+      setPassword("");
+      setName("");
+    },
+    onError: (error) => {
+      const msg =
+        error?.response?.data?.message || error.message || "Signup failed";
+      setErrorMessage(msg);
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMessage("");
+    setSuccessMessage("");
 
     if (mode === "sign-in") {
-      const { accessToken, refreshToken, user } =
-        await AuthService.authControllerLogin({
-          email,
-          password,
-        });
-
-      console.log(accessToken, refreshToken, user);
+      loginMutation.mutate();
     } else {
-      const { id } = await UsersService.usersControllerCreate({
-        email,
-        password,
-        name,
-      });
-
-      console.log(id);
+      signupMutation.mutate();
     }
   };
+
+  const isLoading = loginMutation.isPending || signupMutation.isPending;
 
   return (
     <Flex
@@ -88,9 +119,27 @@ export const AuthScreen = () => {
             required
           />
 
-          <Button type="submit" size="3">
-            {mode === "sign-in" ? "Log In" : "Sign Up"}
+          <Button type="submit" size="3" disabled={isLoading}>
+            {isLoading
+              ? mode === "sign-in"
+                ? "Logging in..."
+                : "Signing up..."
+              : mode === "sign-in"
+              ? "Log In"
+              : "Sign Up"}
           </Button>
+
+          {errorMessage && (
+            <Text color="red" size="2">
+              {errorMessage}
+            </Text>
+          )}
+
+          {successMessage && (
+            <Text color="green" size="2">
+              {successMessage}
+            </Text>
+          )}
         </Flex>
       </form>
 
